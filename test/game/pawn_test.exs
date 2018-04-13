@@ -12,5 +12,10 @@ defmodule RealtimeChess.Game.PawnTest do
       assert MapSet.new([{3, 3}, {2, 3}]) == Pawn.move_positions({1, 3}, :white)
       assert MapSet.new([{4, 7}, {5, 7}]) == Pawn.move_positions({6, 7}, :black)
     end
+
+    test "returns a set with the two positions a pawn can attack" do
+      assert MapSet.new([{6, 6}, {6, 4}]) == Pawn.attack_positions({5, 5}, :white)
+      assert MapSet.new([{4, 6}, {4, 4}]) == Pawn.attack_positions({5, 5}, :black)
+    end
   end
 end
