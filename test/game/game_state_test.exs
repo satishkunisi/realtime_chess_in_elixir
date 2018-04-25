@@ -37,7 +37,6 @@ defmodule RealtimeChess.Game.GameStateTest do
   end
 
   test "get surrounding pieces", %{game_state: game_state} do
-    initialized_board = GameState.initialize_board(game_state)
     piece_position = {3, 3}
 
     #   0 1 2 3 4 5 6 7
@@ -50,25 +49,31 @@ defmodule RealtimeChess.Game.GameStateTest do
     # 6 x 1 1 1 1 1 x x
     # 7 x x x x x x x x
 
-    surrounding_pieces = MapSet.new([
-      {:white, :pawn, {2, 1}},
-      {:black, :pawn, {2, 2}},
-      {:white, :pawn, {2, 3}},
-      {:black, :pawn, {2, 4}},
-      {:white, :pawn, {2, 5}},
-      {:black, :pawn, {3, 1}},
-      {:white, :pawn, {4, 1}},
-      {:black, :pawn, {5, 1}},
-      {:white, :pawn, {6, 1}},
-      {:black, :pawn, {6, 2}},
-      {:white, :pawn, {6, 3}},
-      {:black, :pawn, {6, 4}},
-      {:white, :pawn, {6, 5}},
-      {:black, :pawn, {3, 5}},
-      {:white, :pawn, {4, 5}},
-      {:black, :pawn, {5, 5}}
-    ])
+    surrounding_pieces = [
+      %{piece: {:white, :pawn}, position: {2, 1}},
+      %{piece: {:black, :pawn}, position: {2, 2}},
+      %{piece: {:white, :pawn}, position: {2, 3}},
+      %{piece: {:black, :pawn}, position: {2, 4}},
+      %{piece: {:white, :pawn}, position: {2, 5}},
+      %{piece: {:black, :pawn}, position: {3, 1}},
+      %{piece: {:white, :pawn}, position: {4, 1}},
+      %{piece: {:black, :pawn}, position: {5, 1}},
+      %{piece: {:white, :pawn}, position: {6, 1}},
+      %{piece: {:black, :pawn}, position: {6, 2}},
+      %{piece: {:white, :pawn}, position: {6, 3}},
+      %{piece: {:black, :pawn}, position: {6, 4}},
+      %{piece: {:white, :pawn}, position: {6, 5}},
+      %{piece: {:black, :pawn}, position: {3, 5}},
+      %{piece: {:white, :pawn}, position: {4, 5}},
+      %{piece: {:black, :pawn}, position: {5, 5}}
+    ]
 
-    assert GameState.get_surrounding_pieces(initialized_board, piece_position) == surrounding_pieces
+    new_board = GameState.initialize_board(game_state).board
+
+    setup_board = Enum.reduce(surrounding_pieces, new_board, fn %{piece: piece, position: {row, col}} ->
+      put_in(new_board, [row, col], piece)
+    end)
+
+    assert GameState.get_surrounding_pieces(setup_board, piece_position) == MapSet.new(surrounding_pieces)
   end
 end
