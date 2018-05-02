@@ -68,7 +68,7 @@ defmodule RealtimeChess.Game.GameStateTest do
       %{piece: {:black, :pawn}, position: {5, 5}}
     ]
 
-    new_board = GameState.initialize_board(game_state).board
+    new_board = GameState.blank_board()
 
     setup_board = Enum.reduce(surrounding_pieces, new_board, fn %{piece: piece, position: {row, col}} ->
       put_in(new_board, [row, col], piece)

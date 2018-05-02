@@ -3,10 +3,15 @@ defmodule RealtimeChess.Game.GameState do
 
   @spec initialize_board(Game.t) :: Game.t
   def initialize_board(game_state) do
-    board = add_row(%{}, 0)
+    board = blank_board
     |> populate_board
 
     %Game{game_state | board: board}
+  end
+
+  @spec blank_board :: Map.t
+  def blank_board do
+    add_row(%{}, 0)
   end
 
   @spec update_name(Game.t, String.t) :: Game.t
