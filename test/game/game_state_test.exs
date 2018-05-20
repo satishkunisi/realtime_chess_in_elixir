@@ -49,7 +49,7 @@ defmodule RealtimeChess.Game.GameStateTest do
     # 6 x 1 1 1 1 1 x x
     # 7 x x x x x x x x
 
-    surrounding_pieces = [
+    surrounding_pieces = [ 
       %{piece: {:white, :pawn}, position: {2, 1}},
       %{piece: {:black, :pawn}, position: {2, 2}},
       %{piece: {:white, :pawn}, position: {2, 3}},
