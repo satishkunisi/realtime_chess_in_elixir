@@ -31,23 +31,34 @@ defmodule RealtimeChess.Game.GameState do
   end
 
   @default_deltas %{
-               up: {1, 0},
-             down: {-1, 0}, 
+               up: {-1, 0},
+             down: {1, 0}, 
              left: {0, -1},
             right: {0, 1},
-         up_right: {1, 1},
-          up_left: {1, -1},
-        down_left: {-1, -1},
-       down_right: {-1, 1},
-      el_up_right: {2, 1},
-       el_up_left: {2, -1},
-     el_down_left: {-2, -1},
-    el_down_right: {-2, 1},
-      el_right_up: {1, 2},
-    el_right_down: {1, -2},
-     el_left_down: {-1, -2},
-       el_left_up: {-1, 2}
+         down_right: {1, 1},
+          down_left: {1, -1},
+        up_left: {-1, -1},
+       up_right: {-1, 1},
+      el_down_right: {2, 1},
+       el_down_left: {2, -1},
+     el_up_left: {-2, -1},
+    el_up_right: {-2, 1},
+      el_right_down: {1, 2},
+    el_right_up: {1, -2},
+     el_left_up: {-1, -2},
+       el_left_down: {-1, 2}
   }
+  
+  @el_delta_keys [
+   :el_down_right,
+   :el_down_left,
+   :el_up_left,
+   :el_up_right,
+   :el_right_down,
+   :el_right_up,
+   :el_left_up,
+   :el_left_down
+ ]
 
   @spec surrounding_pieces(board, position) :: MapSet.t 
   def surrounding_pieces(board, piece_position) do 
@@ -55,24 +66,32 @@ defmodule RealtimeChess.Game.GameState do
   end
 
   @spec surrounding_pieces(board, position, integer, list) :: MapSet.t 
-  defp surrounding_pieces(_, _, _, %{}), do: MapSet.new([])  
+  defp surrounding_pieces(_, _, _, deltas) when deltas == %{}, do: MapSet.new([])  
   defp surrounding_pieces(board, {row, col}, multiplier, deltas) do 
-    bounds = %{min: 0, max: 7}
-
     result = deltas  
-    |> Enum.map(fn {dir, {dy, dx}} -> {dir, {row * multiplier, col * multiplier}} end)
-    |> Enum.filter(fn {_, {new_row, new_col}} -> new_row <= bounds.max && new_col >= bounds.min end)  
-    |> Enum.map(fn {dir, {dy, dx}} -> {dir, board[dy][dx]} end) 
-    |> Enum.split_with(fn {dir, piece} -> is_nil(piece) end) 
-   
-    [deltas_list | [pieces_list | _]] = result 
+    |> Enum.map(fn {dir, {dy, dx}} -> {dir, {row + (dy * multiplier), col + (dx * multiplier)}} end)
+    |> Enum.filter(fn {_, piece} -> inbounds?(piece) end)  
+    |> Enum.map(fn {dir, {new_row, new_col}} -> {dir, %{piece: board[new_row][new_col], position: {new_row, new_col}}} end) 
+    |> Enum.split_with(fn {dir, %{piece: piece, position: position}} -> is_nil(piece) end) 
 
-    remaining_deltas = Enum.into(deltas_list, %{})   
-    pieces = Keyword.values(pieces_list) |> MapSet.new
+    {deltas_list, pieces_list} = result 
+    
+    without_el_deltas = Map.drop(@default_deltas, @el_delta_keys)
+    remaining_deltas = Map.take(without_el_deltas, Keyword.keys(deltas_list))
+    next_pieces = surrounding_pieces(board, {row, col}, multiplier + 1, remaining_deltas)
 
-    IO.puts pieces
+    current_pieces = Keyword.values(pieces_list) |> MapSet.new
 
-    MapSet.union(pieces, surrounding_pieces(board, {row, col}, multiplier + 1, remaining_deltas))
+    MapSet.union(
+      current_pieces, 
+      next_pieces 
+    )
+  end
+  
+  @spec inbounds?(piece) :: boolean 
+  defp inbounds?({row, col}) do
+    bounds = %{min: 0, max: 7}
+    row >= bounds.min && row <= bounds.max && col >= bounds.min && col <= bounds.max
   end
 
   @typep position :: tuple 
