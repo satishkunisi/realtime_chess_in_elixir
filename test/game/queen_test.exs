@@ -2,7 +2,7 @@ defmodule RealtimeChess.Game.QueenTest do
   use ExUnit.Case, async: true
   alias RealtimeChess.Game.Queen
 
-  describe "Queen.move_positions/2" do
+  describe "Queen.move_positions/3" do
     test "returns a set with the positions a queen can move" do
       expected_positions = [
         {0, 3}, {1, 3}, {2, 3}, {4, 3}, {5, 3}, {6, 3}, {7, 3},  
