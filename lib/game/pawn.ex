@@ -1,54 +1,66 @@
 defmodule RealtimeChess.Game.Pawn do
-  @bounds %{row_min: 0, col_min: 0, row_max: 7, col_max: 7}
   @starting_row %{white: 1, black: 6}
 
-  @spec move_positions(tuple, :white) :: MapSet.t
-  def move_positions({row, col}, :white) do
-    # map over all motions and calculate all positions from current position
-    white_motions(row)
-    |> calculate_positions({row, col})
+  @spec move_positions(tuple, :white | :black, MapSet.t) :: MapSet.t
+  def move_positions({row, col}, color, surrounding_pieces) do
+    surrounding_positions = get_positions(surrounding_pieces)
+
+    direction = if (color == :white), do: 1, else: -1 
+
+    first_square = {row + direction, col}
+    second_square = {row + (direction * 2), col}
+
+    cond do
+      # first square is out of bounds
+      out_of_bounds?(first_square) -> MapSet.new([]) 
+      # first square is occupied
+      MapSet.member?(surrounding_positions, first_square) -> MapSet.new([]) 
+      # not on starting row and first square is free
+      @starting_row[color] != row -> MapSet.new([first_square]) 
+      # on starting row and second square is blocked 
+      MapSet.member?(surrounding_positions, second_square) -> MapSet.new([first_square]) 
+      # on starting row and second square is free
+      @starting_row[color] == row -> MapSet.new([first_square, second_square])
+    end
   end
 
-  @spec move_positions(tuple, :black) :: MapSet.t
-  def move_positions({row, col}, :black) do
-    # map over all motions and calculate all positions from current position
-    black_motions(row)
-    |> calculate_positions({row, col})
+  @spec attack_positions(tuple, :white | :black, MapSet.t) :: MapSet.t
+  def attack_positions({row, col}, color, surrounding_pieces) do
+    possible_attacks = if (color == :black) do 
+      [{row - 1, col + 1}, {row - 1, col - 1}]
+      |> Enum.filter(&inbounds?/1)
+      |> MapSet.new
+    else
+      [{row + 1, col + 1}, {row + 1, col - 1}]
+      |> Enum.filter(&inbounds?/1)
+      |> MapSet.new
+    end
+
+    surrounding_positions = 
+      surrounding_pieces
+      |> Enum.filter(fn %{position: _, piece: {curr_color, _}} -> curr_color == color end)  
+      |> get_positions 
+      |> MapSet.new
+
+    MapSet.difference(possible_attacks, surrounding_positions) 
   end
 
-  @spec attack_positions(tuple, :black) :: MapSet.t
-  def attack_positions({row, col}, :black) do
-    MapSet.new([{row - 1, col + 1}, {row - 1, col - 1}])
-  end
 
-  @spec attack_positions(tuple, :white) :: MapSet.t
-  def attack_positions({row, col}, :white) do
-    MapSet.new([{row + 1, col + 1}, {row + 1, col - 1}])
-  end
-
-
-  @spec calculate_positions(list, tuple) :: MapSet.t
-  defp calculate_positions(motions, {row, col}) do
-    motions
-    |> Enum.map(fn {dx, dy} -> {row + dx, col + dy} end)
+  @spec get_positions(MapSet.t) :: MapSet.t
+  defp get_positions(surrounding_pieces) do
+    surrounding_pieces
+    |> Enum.map(fn %{position: position, piece: _} -> position end)  
     |> MapSet.new
   end
 
-  @spec white_motions(integer) :: list(tuple)
-  defp white_motions(row) do
-    if row == @starting_row.white do
-      [{1, 0}, {2, 0}]
-    else
-      [{1, 0}]
-    end
+  @spec out_of_bounds?(tuple) ::boolean
+  defp out_of_bounds?(position) do
+    !inbounds?(position)
   end
 
-  @spec black_motions(integer) :: list(tuple)
-  defp black_motions(row) do
-    if row == @starting_row.black do
-      [{-1, 0}, {-2, 0}]
-    else
-      [{-1, 0}]
-    end
+  @spec inbounds?(tuple) :: boolean 
+  defp inbounds?({row, col}) do
+    bounds = %{min: 0, max: 7}
+    row >= bounds.min && row <= bounds.max && col >= bounds.min && col <= bounds.max
   end
 end
