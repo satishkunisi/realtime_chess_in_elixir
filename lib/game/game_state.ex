@@ -1,20 +1,20 @@
 defmodule RealtimeChess.Game.GameState do
   alias RealtimeChess.Game
 
-  @spec initialize_board(Game.t) :: Game.t 
-  def initialize_board(game_state) do 
-    board = blank_board 
-    |> populate_board 
+  @spec initialize_board(Game.t) :: Game.t
+  def initialize_board(game_state) do
+    board = blank_board
+    |> populate_board
 
     %Game{game_state | board: board}
   end
 
-  @spec blank_board :: board 
+  @spec blank_board :: board
   def blank_board do
     add_row(%{}, 0)
   end
 
-  @spec update_name(Game.t, String.t) :: Game.t 
+  @spec update_name(Game.t, String.t) :: Game.t
   def update_name(%Game{} = game_state, new_name) do
     Map.put(game_state, :name, new_name)
   end
@@ -32,7 +32,7 @@ defmodule RealtimeChess.Game.GameState do
 
   @default_deltas %{
                up: {-1, 0},
-             down: {1, 0}, 
+             down: {1, 0},
              left: {0, -1},
             right: {0, 1},
          down_right: {1, 1},
@@ -48,7 +48,7 @@ defmodule RealtimeChess.Game.GameState do
      el_left_up: {-1, -2},
        el_left_down: {-1, 2}
   }
-  
+
   @el_delta_keys [
    :el_down_right,
    :el_down_left,
@@ -60,22 +60,22 @@ defmodule RealtimeChess.Game.GameState do
    :el_left_down
  ]
 
-  @spec surrounding_pieces(board, position) :: MapSet.t 
-  def surrounding_pieces(board, piece_position) do 
+  @spec surrounding_pieces(board, position) :: MapSet.t
+  def surrounding_pieces(board, piece_position) do
     surrounding_pieces(board, piece_position, 1, @default_deltas)
   end
 
-  @spec surrounding_pieces(board, position, integer, list) :: MapSet.t 
-  defp surrounding_pieces(_, _, _, deltas) when deltas == %{}, do: MapSet.new([])  
-  defp surrounding_pieces(board, {row, col}, multiplier, deltas) do 
-    result = deltas  
+  @spec surrounding_pieces(board, position, integer, list) :: MapSet.t
+  defp surrounding_pieces(_, _, _, deltas) when deltas == %{}, do: MapSet.new([])
+  defp surrounding_pieces(board, {row, col}, multiplier, deltas) do
+    result = deltas
     |> Enum.map(fn {dir, {dy, dx}} -> {dir, {row + (dy * multiplier), col + (dx * multiplier)}} end)
-    |> Enum.filter(fn {_, piece} -> inbounds?(piece) end)  
-    |> Enum.map(fn {dir, {new_row, new_col}} -> {dir, %{piece: board[new_row][new_col], position: {new_row, new_col}}} end) 
-    |> Enum.split_with(fn {dir, %{piece: piece, position: position}} -> is_nil(piece) end) 
+    |> Enum.filter(fn {_, piece} -> inbounds?(piece) end)
+    |> Enum.map(fn {dir, {new_row, new_col}} -> {dir, %{piece: board[new_row][new_col], position: {new_row, new_col}}} end)
+    |> Enum.split_with(fn {dir, %{piece: piece, position: position}} -> is_nil(piece) end)
 
-    {deltas_list, pieces_list} = result 
-    
+    {deltas_list, pieces_list} = result
+
     without_el_deltas = Map.drop(@default_deltas, @el_delta_keys)
     remaining_deltas = Map.take(without_el_deltas, Keyword.keys(deltas_list))
     next_pieces = surrounding_pieces(board, {row, col}, multiplier + 1, remaining_deltas)
@@ -83,19 +83,31 @@ defmodule RealtimeChess.Game.GameState do
     current_pieces = Keyword.values(pieces_list) |> MapSet.new
 
     MapSet.union(
-      current_pieces, 
-      next_pieces 
+      current_pieces,
+      next_pieces
     )
   end
-  
-  @spec inbounds?(piece) :: boolean 
+
+  @spec valid_moves(board, Map.t) :: MapSet.t
+  def valid_moves(board, %{piece: {color, piece_type}, position: position}) do
+    with module_name <- :"Elixir.RealtimeChess.Game.#{piece_type |> Atom.to_string |> String.capitalize}",
+         pieces <- surrounding_pieces(board, position)
+    do
+      MapSet.union(
+        module_name.move_positions(position, color, pieces),
+        module_name.attack_positions(position, color, pieces)
+      )
+    end
+  end
+
+  @spec inbounds?(piece) :: boolean
   defp inbounds?({row, col}) do
     bounds = %{min: 0, max: 7}
     row >= bounds.min && row <= bounds.max && col >= bounds.min && col <= bounds.max
   end
 
-  @typep position :: tuple 
-  @typep piece :: tuple 
+  @typep position :: tuple
+  @typep piece :: tuple
   @typep board :: %{required(integer) => (nil | piece)}
 
   @spec populate_board(board) :: board
