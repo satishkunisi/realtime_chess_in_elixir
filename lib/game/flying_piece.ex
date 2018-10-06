@@ -1,21 +1,24 @@
 defmodule RealtimeChess.Game.FlyingPiece do
+  alias RealtimeChess.Game.Piece
+
   defmacro __using__(opts) do
     quote do
       import RealtimeChess.Game.FlyingPiece
+      alias RealtimeChess.Game.Piece
 
-      @spec attack_positions(tuple, atom, MapSet.t) :: MapSet.t
+      @spec attack_positions(Piece.position(), Piece.color(), Piece.pieces()) :: Piece.positions()
       def attack_positions(position, color, surrounding_pieces) do
         attack_positions(position, color, surrounding_pieces, unquote(opts)[:deltas])
       end
 
-      @spec move_positions(tuple, atom, MapSet.t) :: MapSet.t
+      @spec move_positions(Piece.position(), Piece.color(), Piece.pieces()) :: Piece.positions() 
       def move_positions(position, color, surrounding_pieces) do
         move_positions(position, color, surrounding_pieces, unquote(opts)[:deltas])
       end
     end
   end
 
-  @spec attack_positions(tuple, atom, MapSet.t, Map.t) :: MapSet.t
+  @spec attack_positions(Piece.position(), Piece.color(), Piece.pieces(), map) :: Piece.positions() 
   def attack_positions(position, color, surrounding_pieces, deltas) do
     same_positions = same_color_positions(surrounding_pieces, color)
     opposing_positions = opposing_color_positions(surrounding_pieces, color)
@@ -26,7 +29,7 @@ defmodule RealtimeChess.Game.FlyingPiece do
     |> MapSet.new
   end
 
-  @spec move_positions(tuple, atom, MapSet.t, Map.t) :: MapSet.t
+  @spec move_positions(Piece.position(), Piece.color(), Piece.pieces(), map) :: Piece.positions() 
   def move_positions(position, _, surrounding_pieces, deltas) do
     surrounding_positions = get_all_positions(surrounding_pieces)
 
@@ -36,9 +39,10 @@ defmodule RealtimeChess.Game.FlyingPiece do
     |> MapSet.new
   end
   
-  @spec calculate_positions(tuple, tuple, integer, MapSet.t) :: MapSet.t
+  @spec calculate_positions(Piece.position(), Piece.position(), integer, Piece.positions()) :: list() 
   defp calculate_positions({row, col}, {dy, dx}, multiplier, surrounding_positions) do
     curr_position = {row + (dy * multiplier), col + (dx * multiplier)}
+
     if out_of_bounds?(curr_position) || MapSet.member?(surrounding_positions, curr_position) do 
       []
     else
@@ -47,9 +51,10 @@ defmodule RealtimeChess.Game.FlyingPiece do
     end
   end
 
-  @spec calculate_attacks(tuple, tuple, integer, MapSet.t, MapSet.t) :: MapSet.t
+  @spec calculate_attacks(Piece.position(), Piece.position(), integer, Piece.positions(), Piece.positions()) :: list() 
   defp calculate_attacks({row, col}, {dy, dx}, multiplier, same_positions, opposing_positions) do
     curr_position = {row + (dy * multiplier), col + (dx * multiplier)}
+
     cond do
       out_of_bounds?(curr_position) || MapSet.member?(same_positions, curr_position) -> 
         []
@@ -61,7 +66,7 @@ defmodule RealtimeChess.Game.FlyingPiece do
     end
   end
 
-  @spec get_all_positions(MapSet.t) :: MapSet.t
+  @spec get_all_positions(Piece.positions()) :: Piece.positions
   defp get_all_positions(surrounding_pieces) do
     surrounding_pieces
     |> Enum.map(fn %{position: position, piece: _} -> position end)  

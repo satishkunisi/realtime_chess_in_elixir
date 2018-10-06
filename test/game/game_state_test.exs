@@ -2,6 +2,7 @@ defmodule RealtimeChess.Game.GameStateTest do
   use ExUnit.Case, async: true
   alias RealtimeChess.Game.GameState
   alias RealtimeChess.Game
+  alias RealtimeChess.Game.Board
 
   setup do
     %{game_state: %Game{name: "testgame"}}
@@ -51,7 +52,7 @@ defmodule RealtimeChess.Game.GameStateTest do
 
       surrounding_pieces = []
 
-      new_board = GameState.blank_board()
+      new_board = Board.blank_board()
 
       setup_board = Enum.reduce(surrounding_pieces, new_board, fn (%{piece: piece, position: {row, col}}, new_board) ->
         put_in(new_board, [row, col], piece)
@@ -92,7 +93,7 @@ defmodule RealtimeChess.Game.GameStateTest do
         %{piece: {:black, :pawn}, position: {5, 5}}
       ]
 
-      new_board = GameState.blank_board()
+      new_board = Board.blank_board()
 
       setup_board = Enum.reduce(surrounding_pieces, new_board, fn (%{piece: piece, position: {row, col}}, new_board) ->
         put_in(new_board, [row, col], piece)
@@ -134,7 +135,7 @@ defmodule RealtimeChess.Game.GameStateTest do
         %{piece: {:white, :pawn}, position: {3, 0}}
       ]
 
-      new_board = GameState.blank_board()
+      new_board = Board.blank_board()
 
       surrounding_pieces = expected_pieces ++ ignored_pieces
 
@@ -196,7 +197,7 @@ defmodule RealtimeChess.Game.GameStateTest do
         {7, 6}
       ])
 
-      new_board = GameState.blank_board()
+      new_board = Board.blank_board()
 
       setup_board = Enum.reduce(surrounding_pieces, new_board, fn (%{piece: piece, position: {row, col}}, new_board) ->
         put_in(new_board, [row, col], piece)
@@ -205,4 +206,8 @@ defmodule RealtimeChess.Game.GameStateTest do
       assert GameState.valid_moves(setup_board, piece) == expected_moves
     end
   end
+
+  # describe "gamestate.in_check?/2" do
+  #   test "takes a gam" do 
+  # end
 end

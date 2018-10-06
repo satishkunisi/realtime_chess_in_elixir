@@ -1,7 +1,9 @@
 defmodule RealtimeChess.Game.Pawn do
+  alias RealtimeChess.Game.Piece
+
   @starting_row %{white: 1, black: 6}
 
-  @spec move_positions(tuple, :white | :black, MapSet.t) :: MapSet.t
+  @spec move_positions(tuple, :white | :black, Piece.pieces()) :: Piece.positions()
   def move_positions({row, col}, color, surrounding_pieces) do
     surrounding_positions = get_positions(surrounding_pieces)
 
@@ -24,41 +26,41 @@ defmodule RealtimeChess.Game.Pawn do
     end
   end
 
-  @spec attack_positions(tuple, :white | :black, MapSet.t) :: MapSet.t
+  @spec attack_positions(tuple, :white | :black, Piece.pieces()) :: Piece.positions()  
   def attack_positions({row, col}, color, surrounding_pieces) do
     possible_attacks = if (color == :black) do 
       [{row - 1, col + 1}, {row - 1, col - 1}]
       |> Enum.filter(&inbounds?/1)
-      |> MapSet.new
+      |> MapSet.new()
     else
       [{row + 1, col + 1}, {row + 1, col - 1}]
       |> Enum.filter(&inbounds?/1)
-      |> MapSet.new
+      |> MapSet.new()
     end
 
     surrounding_positions = 
       surrounding_pieces
       |> Enum.filter(fn %{position: _, piece: {curr_color, _}} -> curr_color == color end)  
-      |> get_positions 
-      |> MapSet.new
+      |> MapSet.new()
+      |> get_positions() 
 
     MapSet.difference(possible_attacks, surrounding_positions) 
   end
 
 
-  @spec get_positions(MapSet.t) :: MapSet.t
+  @spec get_positions(Piece.pieces()) :: Piece.positions() 
   defp get_positions(surrounding_pieces) do
     surrounding_pieces
     |> Enum.map(fn %{position: position, piece: _} -> position end)  
-    |> MapSet.new
+    |> MapSet.new()
   end
 
-  @spec out_of_bounds?(tuple) ::boolean
+  @spec out_of_bounds?(Piece.position()) ::boolean
   defp out_of_bounds?(position) do
     !inbounds?(position)
   end
 
-  @spec inbounds?(tuple) :: boolean 
+  @spec inbounds?(Piece.position()) :: boolean 
   defp inbounds?({row, col}) do
     bounds = %{min: 0, max: 7}
     row >= bounds.min && row <= bounds.max && col >= bounds.min && col <= bounds.max
