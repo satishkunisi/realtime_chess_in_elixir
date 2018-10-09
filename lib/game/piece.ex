@@ -1,10 +1,10 @@
-defmodule RealtimeChess.Game.Piece do 
-  @typep piece_type :: (:pawn | :rook | :knight | :bishop | :queen | :king)  
+defmodule RealtimeChess.Game.Piece do
+  @typep piece_type :: (:pawn | :rook | :knight | :bishop | :queen | :king)
 
-  @type color :: (:white | :black)  
+  @type color :: (:white | :black)
   @type t :: {color, piece_type}
   @type pieces :: (MapSet.t(board_piece) | MapSet.t())
-  @type position :: {integer, integer} 
+  @type position :: {integer, integer}
   @type positions :: MapSet.t(position) | MapSet.t()
-  @type board_piece :: %{piece: t, position: position}   
+  @type board_piece :: %{piece: t, position: position}
 end

@@ -1,8 +1,10 @@
 {application,realtime_chess,
-             [{applications,[kernel,stdlib,elixir,logger]},
+             [{applications,[kernel,stdlib,elixir,logger,apex]},
               {description,"realtime_chess"},
               {modules,['Elixir.RealtimeChess','Elixir.RealtimeChess.Game',
                         'Elixir.RealtimeChess.Game.Bishop',
+                        'Elixir.RealtimeChess.Game.Board',
+                        'Elixir.RealtimeChess.Game.FlyingPiece',
                         'Elixir.RealtimeChess.Game.GameState',
                         'Elixir.RealtimeChess.Game.King',
                         'Elixir.RealtimeChess.Game.Knight',
@@ -12,5 +14,4 @@
                         'Elixir.RealtimeChess.Game.Registry',
                         'Elixir.RealtimeChess.Game.Rook']},
               {registered,[]},
-              {vsn,"0.1.0"},
-              {extra_applications,[logger]}]}.
+              {vsn,"0.1.0"}]}.

@@ -3,10 +3,9 @@ defmodule RealtimeChess.Game.GameState do
   alias RealtimeChess.Game.Board
   alias RealtimeChess.Game.Piece
 
-  @typep board :: Board.t 
-  @typep piece :: Piece.t() 
-  @typep position :: Piece.position() 
-  @typep pieces :: Piece.pieces() 
+  @typep board :: Board.t
+  @typep position :: Piece.position()
+  @typep pieces :: Piece.pieces()
   @typep board_piece :: Piece.board_piece()
 
   @spec initialize_board(Game.t) :: Game.t
@@ -54,19 +53,19 @@ defmodule RealtimeChess.Game.GameState do
    :el_left_down
  ]
 
-  @spec surrounding_pieces(board, position) :: pieces() 
+  @spec surrounding_pieces(board, position) :: pieces()
   def surrounding_pieces(board, piece_position) do
     surrounding_pieces(board, piece_position, 1, @default_deltas)
   end
 
-  @spec surrounding_pieces(board, position, integer, map) :: pieces() 
+  @spec surrounding_pieces(board, position, integer, map) :: pieces()
   defp surrounding_pieces(_, _, _, deltas) when deltas == %{}, do: MapSet.new([])
   defp surrounding_pieces(board, {row, col}, multiplier, deltas) do
     result = deltas
       |> Enum.map(fn {dir, {dy, dx}} -> {dir, {row + (dy * multiplier), col + (dx * multiplier)}} end)
       |> Enum.filter(fn {_, piece} -> inbounds?(piece) end)
       |> Enum.map(fn {dir, {new_row, new_col}} -> {dir, %{piece: board[new_row][new_col], position: {new_row, new_col}}} end)
-      |> Enum.split_with(fn {dir, %{piece: piece, position: position}} -> is_nil(piece) end)
+      |> Enum.split_with(fn {_, %{piece: piece, position: _}} -> is_nil(piece) end)
 
     {deltas_list, pieces_list} = result
 
@@ -82,7 +81,7 @@ defmodule RealtimeChess.Game.GameState do
     )
   end
 
-  @spec valid_moves(board, board_piece) :: pieces() 
+  @spec valid_moves(board, board_piece) :: pieces()
   def valid_moves(board, %{piece: {color, piece_type}, position: position}) do
     with module_name <- :"Elixir.RealtimeChess.Game.#{piece_type |> Atom.to_string |> String.capitalize}",
          pieces <- surrounding_pieces(board, position)

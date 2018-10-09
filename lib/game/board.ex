@@ -1,12 +1,62 @@
 defmodule RealtimeChess.Game.Board do
+  alias RealtimeChess.Game.GameState
+  alias RealtimeChess.Game.Piece
+  alias RealtimeChess.Game.Board
+
   @type t :: %{required(integer) => %{required(integer) => board_piece}}
-  
+
   @typep board_piece :: (nil | piece)
   @typep board :: t
   @typep piece :: tuple
   @typep position :: {integer, integer}
 
-  @spec move_piece(board, %{current_position: position, new_position: position}) :: board 
+  @spec fetch(board, integer) :: {:ok, %{required(integer) => board_piece}} | :error
+  def fetch(board, key), do: Map.fetch(board, key)
+
+  @spec in_check?(board, Piece.color()) :: boolean
+  def in_check?(board, king_color) do
+    king = get_pieces_by_attrs(board, :king, king_color)
+      |> MapSet.to_list()
+      |> List.first()
+
+    board
+    |> GameState.surrounding_pieces(king.position)
+    |> Enum.reduce(MapSet.new([]), fn board_piece, opposing_pieces ->
+      {piece_color, _type} = board_piece.piece
+
+      if piece_color != king_color do
+        MapSet.put(opposing_pieces, board_piece)
+      else
+        opposing_pieces
+      end
+    end)
+    |> Enum.reduce(MapSet.new([]), fn opposing_piece, opposing_positions ->
+      MapSet.union(opposing_positions, GameState.valid_moves(board, opposing_piece))
+    end)
+    |> MapSet.member?(king.position)
+  end
+
+  # TODO: move below along with other private methods
+  @spec get_pieces_by_attrs(board, Piece.piece_type(), Piece.color()) :: Piece.pieces()
+  defp get_pieces_by_attrs(board, type, color) do
+    board
+    |> Map.to_list()
+    |> Enum.flat_map(fn {row, pieces} ->
+      pieces
+      |> Map.to_list()
+      |> Enum.reject(fn {_, piece} -> is_nil(piece) end)
+      |> Enum.filter(fn {_, piece} -> piece == {color, type} end)
+      |> Enum.map(fn {col, piece} -> %{piece: piece, position: {row, col}} end)
+    end)
+    |> MapSet.new()
+  end
+
+  @spec insert_piece(board, {integer, integer}, piece) :: board
+  def insert_piece(board, {row, col}, piece) do
+    put_in(board[row][col], piece)
+  end
+
+  @spec move_piece(board, %{current_position: position, new_position: position}) :: board
   def move_piece(board, %{current_position: current_position, new_position: new_position}) do
     piece = get_piece(board, current_position)
 
@@ -80,11 +130,6 @@ defmodule RealtimeChess.Game.Board do
   @spec get_piece(board, position) :: (piece | nil)
   defp get_piece(board, {row, col}) do
     board[row][col]
-  end
-
-  @spec insert_piece(board, {integer, integer}, piece) :: board
-  defp insert_piece(board, {row, col}, piece) do
-    put_in(board[row][col], piece)
   end
 
   @spec delete_piece(board, {integer, integer}) :: board

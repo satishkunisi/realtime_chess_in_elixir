@@ -206,8 +206,4 @@ defmodule RealtimeChess.Game.GameStateTest do
       assert GameState.valid_moves(setup_board, piece) == expected_moves
     end
   end
-
-  # describe "gamestate.in_check?/2" do
-  #   test "takes a gam" do 
-  # end
 end
