@@ -13,42 +13,67 @@ defmodule RealtimeChess.Game.Board do
   @spec fetch(board, integer) :: {:ok, %{required(integer) => board_piece}} | :error
   def fetch(board, key), do: Map.fetch(board, key)
 
+  @spec checkmate?(board, Piece.color()) :: boolean
+  def checkmate?(board, king_color) do
+    if in_check?(board, king_color) do
+      board
+      |> valid_positions_by_piece()
+      |> Map.to_list()
+      |> Enum.filter(fn {%{piece: {piece_color, _type}, position: _current_position}, _positions} -> piece_color == king_color end)
+      |> Enum.all?(fn {%{piece: _piece, position: current_position}, valid_positions} ->
+        valid_positions
+        |> MapSet.to_list()
+        |> Enum.all?(fn new_position ->
+          updated_board_in_check?(board, current_position, new_position, king_color)
+        end)
+      end)
+    else
+      false
+    end
+  end
+
+  @spec updated_board_in_check?(board,  Piece.position(), Piece.position(), Piece.color()) :: boolean()
+  defp updated_board_in_check?(board, current_position, new_position, king_color) do
+    board
+    |> move_piece(%{current_position: current_position, new_position: new_position})
+    |> in_check?(king_color)
+  end
+
+  @spec valid_positions_by_piece(board) :: map()
+  def valid_positions_by_piece(board) do
+    board
+    |> Map.to_list()
+    |> Enum.flat_map(fn {row, pieces} ->
+      pieces
+      |> Map.to_list()
+      |> Enum.reject(fn {_col, piece} -> is_nil(piece) end)
+      |> Enum.map(fn {col, piece} -> %{piece: piece, position: {row, col}} end)
+    end)
+    |> Enum.reduce(%{}, fn board_piece, positions_by_piece ->
+      Map.put(
+        positions_by_piece,
+        board_piece,
+        GameState.valid_moves(board, board_piece)
+      )
+    end)
+  end
+
   @spec in_check?(board, Piece.color()) :: boolean
   def in_check?(board, king_color) do
     king = get_pieces_by_attrs(board, :king, king_color)
       |> MapSet.to_list()
       |> List.first()
 
-    board
-    |> GameState.surrounding_pieces(king.position)
-    |> Enum.reduce(MapSet.new([]), fn board_piece, opposing_pieces ->
-      {piece_color, _type} = board_piece.piece
+    Apex.ap(king)
 
-      if piece_color != king_color do
-        MapSet.put(opposing_pieces, board_piece)
-      else
-        opposing_pieces
-      end
-    end)
-    |> Enum.reduce(MapSet.new([]), fn opposing_piece, opposing_positions ->
-      MapSet.union(opposing_positions, GameState.valid_moves(board, opposing_piece))
-    end)
-    |> MapSet.member?(king.position)
-  end
-
-  # TODO: move below along with other private methods
-  @spec get_pieces_by_attrs(board, Piece.piece_type(), Piece.color()) :: Piece.pieces()
-  defp get_pieces_by_attrs(board, type, color) do
     board
+    |> valid_positions_by_piece()
     |> Map.to_list()
-    |> Enum.flat_map(fn {row, pieces} ->
-      pieces
-      |> Map.to_list()
-      |> Enum.reject(fn {_, piece} -> is_nil(piece) end)
-      |> Enum.filter(fn {_, piece} -> piece == {color, type} end)
-      |> Enum.map(fn {col, piece} -> %{piece: piece, position: {row, col}} end)
+    |> Enum.filter(fn {%{piece: {piece_color, _type}, position: _position}, _valid_positions} -> piece_color != king_color end)
+    |> Apex.ap()
+    |> Enum.any?(fn {_board_piece, valid_positions} ->
+      MapSet.member?(valid_positions, king.position)
     end)
-    |> MapSet.new()
   end
 
   @spec insert_piece(board, {integer, integer}, piece) :: board
@@ -79,6 +104,20 @@ defmodule RealtimeChess.Game.Board do
       |> fill_row(1, white_pawn)
       |> fill_row(6, black_pawn)
       |> fill_back
+  end
+
+  @spec get_pieces_by_attrs(board, Piece.piece_type(), Piece.color()) :: Piece.pieces()
+  defp get_pieces_by_attrs(board, type, color) do
+    board
+    |> Map.to_list()
+    |> Enum.flat_map(fn {row, pieces} ->
+      pieces
+      |> Map.to_list()
+      |> Enum.reject(fn {_, piece} -> is_nil(piece) end)
+      |> Enum.filter(fn {_, piece} -> piece == {color, type} end)
+      |> Enum.map(fn {col, piece} -> %{piece: piece, position: {row, col}} end)
+    end)
+    |> MapSet.new()
   end
 
   @spec fill_back(board) :: board
